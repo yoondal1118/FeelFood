@@ -1,0 +1,11 @@
+selenium
+pymysql
+pandas 
+python-dotenv 
+numpy
+flask 
+google-genai 
+requests
+tensorflow 
+soynlp 
+transformers
