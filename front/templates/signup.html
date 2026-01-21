@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>회원가입</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+                font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            }
+
+            body {
+                margin: 0;
+                height: 100vh;
+                background: #fff4ec;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .signup-box {
+                width: 380px;
+                background: #ffffff;
+                padding: 40px 42px;
+                border-radius: 14px;
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+            }
+
+            .signup-box h2 {
+                text-align: center;
+                margin-bottom: 28px;
+                color: #e67e22;
+                font-weight: 700;
+            }
+
+            label {
+                display: block;
+                font-size: 14px;
+                margin-bottom: 6px;
+                color: #555;
+            }
+
+            input {
+                width: 100%;
+                padding: 14px 22px;
+                margin-bottom: 6px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+
+            input:focus {
+                outline: none;
+                border-color: #f4a261;
+                box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);
+            }
+
+            .msg {
+                font-size: 12px;
+                margin-bottom: 14px;
+            }
+
+            button {
+                width: 100%;
+                padding: 14px;
+                background: linear-gradient(135deg, #f6b26b, #f4a261);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 15px;
+                font-weight: bold;
+                cursor: pointer;
+                box-shadow: 0 6px 14px rgba(244, 162, 97, 0.4);
+                margin-top: 10px;
+            }
+                .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        /* ✅ 버튼들이 동일한 크기를 가지도록 */
+        .button-group > * {
+            flex: 1;
+        }
+
+        /* ✅ a 태그 스타일 초기화 */
+        .button-group a {
+            text-decoration: none;
+            display: block;
+        }
+
+        /* ✅ 버튼이 부모 크기에 맞도록 */
+        .button-group button {
+            width: 100%;
+        }
+            button:hover {
+                opacity: 0.9;
+            }
+        </style>
+    </head>
+
+    <body>
+            <div class="signup-box">
+                <h2>회원가입</h2>
+
+                <!-- ✅ action / method 제거 -->
+                <form id="signupForm">
+
+                    <label>이름</label>
+                    <input type="text" name="name" required>
+
+                    <label>아이디</label>
+                    <input type="text" id="userid" name="userid" required>
+                    <div id="userid-msg" class="msg"></div>
+
+                    <label>비밀번호</label>
+                    <input type="password" id="password" name="password" required>
+                    <div id="password-msg" class="msg">
+                        영문/숫자/특수문자(!~@#) 중 2가지 이상, 6자 이상
+                    </div>
+
+                    <label>이메일</label>
+                    <input type="email" id="email" name="email" required>
+                    <div id="email-msg" class="msg"></div>
+
+                    <label>생년월일</label>
+                    <input type="date" name="birth" required>
+                    <div class="button-group">
+                        <button flex:1 width:50% type="submit">가입하기</button>
+                        <button flex:1 width:50% onclick="window.location.href='/'">메인으로</button>
+                    </div>
+                </form>
+            </div>
+
+            <script>
+            /* ================= 상태값 ================= */
+            let useridAvailable = false;
+
+            /* ================= 아이디 검사 + 중복 ================= */
+            document.getElementById("userid").addEventListener("input", async function () {
+                const v = this.value.trim();
+                const msg = document.getElementById("userid-msg");
+                useridAvailable = false;
+
+                if (!/^[a-z0-9]+$/.test(v)) {
+                    msg.style.color = "red";
+                    msg.textContent = "아이디는 영문 소문자와 숫자만 가능합니다.";
+                    return;
+                }
+
+                const res = await fetch("/check_userid", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userid: v })
+                });
+
+                const data = await res.json();
+
+                if (data.exists) {
+                    msg.style.color = "red";
+                    msg.textContent = "이미 사용 중인 아이디입니다.";
+                } else {
+                    msg.style.color = "green";
+                    msg.textContent = "사용 가능한 아이디입니다.";
+                    useridAvailable = true;
+                }
+            });
+
+            /* ================= 비밀번호 검사 ================= */
+            document.getElementById("password").addEventListener("input", function () {
+                const v = this.value;
+                const msg = document.getElementById("password-msg");
+
+                const count =
+                    /[A-Za-z]/.test(v) +
+                    /[0-9]/.test(v) +
+                    /[!~@#]/.test(v);
+
+                if (v.length < 6 || count < 2 || /[^A-Za-z0-9!~@#]/.test(v)) {
+                    msg.style.color = "red";
+                    msg.textContent = "조건을 만족하지 않습니다.";
+                    return;
+                }
+
+                msg.style.color = "green";
+                msg.textContent = "안전한 비밀번호입니다.";
+            });
+
+            /* ================= 이메일 검사 ================= */
+            document.getElementById("email").addEventListener("input", function () {
+                const v = this.value;
+                const msg = document.getElementById("email-msg");
+
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+                    msg.style.color = "red";
+                    msg.textContent = "올바른 이메일 형식이 아닙니다.";
+                    return;
+                }
+
+                msg.style.color = "green";
+                msg.textContent = "사용 가능한 이메일입니다.";
+            });
+
+            /* ================= 최종 제출 ================= */
+            document.getElementById("signupForm").addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                if (!useridAvailable) {
+                    alert("아이디 중복 검사를 통과하세요.");
+                    return;
+                }
+
+                const formData = new FormData(this);
+
+                const res = await fetch("/signup_process", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert("회원가입이 완료되었습니다!");
+                    window.location.href = "/login";
+                } else {
+                    const box = document.getElementById(`${data.field}-msg`);
+                    if (box) {
+                        box.style.color = "red";
+                        box.textContent = data.msg;
+                    } else {
+                        alert(data.msg);
+                    }
+                }
+            });
+            </script>
+        </body>
+    </html>

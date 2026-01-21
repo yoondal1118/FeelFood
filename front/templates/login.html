@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #fff4ec; /* 파스텔 오렌지 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            width: 380px;
+            background: #ffffff;
+            padding: 40px 42px;
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 28px;
+            color: #e67e22;
+            font-weight: 700;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 22px;
+            margin-bottom: 6px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #f4a261;
+            box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);
+        }
+
+        .msg {
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+    button {
+        padding: 14px;
+        background: linear-gradient(135deg, #f6b26b, #f4a261);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 6px 14px rgba(244, 162, 97, 0.4);
+    }
+
+    button:hover {
+        opacity: 0.9;
+    }
+
+    /* ✅ 버튼 컨테이너 */
+    .button-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    /* ✅ 버튼들이 동일한 크기를 가지도록 */
+    .button-group > * {
+        flex: 1;
+    }
+
+    /* ✅ a 태그 스타일 초기화 */
+    .button-group a {
+        text-decoration: none;
+        display: block;
+    }
+
+    /* ✅ 버튼이 부모 크기에 맞도록 */
+    .button-group button {
+        width: 100%;
+    }
+    </style>
+</head>
+
+<body>
+<div class="login-box">
+    <h2>로그인</h2>
+
+    <form id="loginForm" onsubmit="return submitLogin();">
+        <label>아이디</label>
+        <input type="text" name="userid" id="userid" oninput="clearMsg('userid-msg')" required>
+        <div id="userid-msg" class="msg"></div>
+
+        <label>비밀번호</label>
+        <input type="password" name="password" id="password" oninput="clearMsg('password-msg')" required>
+        <div id="password-msg" class="msg"></div>
+
+        <!-- ✅ 버튼들을 div로 감싸기 -->
+        <div class="button-group">
+            <button flex:1 width:50%>로그인</button>
+            <button flex:1 width:50% onclick="window.location.href='/'">메인으로</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function clearMsg(id) {
+    document.getElementById(id).innerText = "";
+}
+
+function submitLogin() {
+    const userid = document.getElementById("userid").value;
+    const password = document.getElementById("password").value;
+
+    const formData = new FormData();
+    formData.append("userid", userid);
+    formData.append("password", password);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/login_process", true);
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            const res = JSON.parse(xhr.responseText);
+
+            if (res.success) {
+                window.location.href = "./";
+            } else {
+                document.getElementById("password-msg").innerText = res.msg;
+            }
+        }
+    };
+
+    xhr.send(formData);
+    return false;
+}
+</script>
+
+</body>
+</html>

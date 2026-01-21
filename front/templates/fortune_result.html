@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 운세 - 결과</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .result-container {
+            max-width: 1200px;
+            margin: 0px auto;
+            padding: 10px;
+        }
+
+        .welcome-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .fortune-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            white-space: pre-line;
+            line-height: 1.8;
+        }
+
+        .stores-section {
+            margin-top: 40px;
+        }
+
+        .category-title {
+            font-size: 24px;
+            color: #333;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .stores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .store-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .store-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .store-info {
+            padding: 20px;
+        }
+
+        .store-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .store-category {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .store-address {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .store-city {
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .store-review {
+            color: #555;
+            font-size: 14px;
+            font-style: italic;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .no-stores {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .btn-home {
+            display: inline-block;
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-logout {
+            display: inline-block;
+            padding: 14px 30px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #5a6268;
+        }
+        .view-restaurants-btn {
+            display: block;
+            width: fit-content;
+            margin: 40px auto;
+            padding: 20px 50px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(245, 87, 108, 0.4);
+            text-decoration: none;
+            animation: pulse 2s infinite;
+        }
+
+        .view-restaurants-btn:hover {
+            transform: translateY(-3px) scale(1.08);
+            box-shadow: 0 12px 35px rgba(245, 87, 108, 0.6);
+            animation: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="result-container">
+        <a href="./"><button>처음으로</button></a>
+        <!-- 환영 섹션 -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">{{ u_name }}님의 오늘 운세</h1>
+            <p>✨ AI가 당신만을 위한 운세를 준비했습니다 ✨</p>
+        </div>
+
+        <!-- 운세 결과 섹션 -->
+        <div class="fortune-section">
+            {{ fortune_text }}
+        </div>
+        <!-- 가게 추천 섹션 -->
+        <a href="/main_list?type=fortune&location={{ location }}&categories={{ categories_encoded }}" class="view-restaurants-btn" name="fortune">
+            🍴 추천 맛집 보러가기
+        </a>
+        <!-- 버튼 섹션 -->
+        <div class="btn-container">
+            <a href="/" class="btn-home">🏠 메인으로</a>
+            <a href="/logout" class="btn-logout">로그아웃</a>
+        </div>
+
+    </div>
+</body>
+</html>

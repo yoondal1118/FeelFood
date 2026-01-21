@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- 문서의 문자 인코딩을 UTF-8로 설정 (한글 표시) -->
+    <meta charset="UTF-8">
+    <!-- 모바일 화면에 맞게 반응형으로 표시 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 브라우저 탭에 표시될 제목 -->
+    <title>오늘 뭐 먹지? - 메인</title>
+    <!-- CSS 파일 연결 (static 폴더의 style.css) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- 전체 컨테이너: 화면 중앙에 내용을 배치 -->
+    <div class="container">
+        <div class="top-auth">
+            {% if userid %}
+                <span>{{ userid }} 님 환영합니다</span>
+                <a href="/mypage">마이페이지</a>
+                <a href="/logout">로그아웃</a>
+            {% else %}
+                <a href="/login">로그인</a>
+                <a href="/signup">회원가입</a>
+            {% endif %}
+        </div>
+
+        <!-- 🎓 대학교 선택 - 왼쪽 위에 작게 배치 -->
+        <div class="university-compact">
+            <label for="universitySelect" class="university-label">🎓 대학교:</label>
+            <select id="universitySelect" class="university-select-compact">
+                <option value="">선택</option>
+                <option value="서울대">서울대</option>
+                <option value="부산대">부산대</option>
+                <option value="경북대">경북대</option>
+                <option value="전북대" selected>전북대</option>
+                <option value="전남대">전남대</option>
+                <option value="경상대">경상국립대</option>
+                <option value="충북대">충북대</option>
+                <option value="충남대">충남대</option>
+                <option value="강원대">강원대</option>
+                <option value="제주대">제주대</option>
+            </select>
+        </div>
+
+        <!-- 경고 메시지 (처음엔 숨김) -->
+        <div id="universityAlert" class="university-alert-compact" style="display: none;">
+            ⚠️ 대학교를 먼저 선택해주세요!
+        </div>
+
+
+        <!-- 메인 제목 -->
+        <div class="logo-container">
+            <img src="../static/GSNN_logo_mainpage.png" alt="logo" class="main-logo">
+        </div>
+
+        <!-- 부제목 -->
+        <p class="subtitle">당신의 감정과 상황에 맞는 음식을 추천해드립니다</p>
+
+        <!-- ========================================== -->
+        <!-- 섹션 1: 감정 선택 버튼 (5가지) -->
+        <!-- ========================================== -->
+        <div class="section">
+            <!-- 섹션 제목 -->
+            <h2 class="section-title">😊 지금 기분이 어떠세요?</h2>
+
+            <!-- 버튼들을 담는 컨테이너 -->
+            <div class="button-group">
+                <button class="emotion-btn joy-btn" onclick="selectEmotion('희')">😊 희</button>
+                <button class="emotion-btn anger-btn" onclick="selectEmotion('노')">😠 노</button>
+                <button class="emotion-btn sad-btn" onclick="selectEmotion('애(슬픔)')">😢 애</button>
+                <button class="emotion-btn love-btn" onclick="selectEmotion('애(사랑)')">❤️ 애</button>
+                <button class="emotion-btn fun-btn" onclick="selectEmotion('락')">🎉 락</button>
+            </div>
+        </div>
+        <!-- ========================================== -->
+        <!-- 섹션 2: 사용자 직접 입력 -->
+        <!-- ========================================== -->
+        <div class="section">
+            <!-- 섹션 제목 -->
+            <h2 class="section-title">✍️ 직접 감정을 표현해보세요</h2>
+
+            <!-- 폼: 입력값을 서버로 전송 -->
+            <!-- method="get": GET 방식으로 전송 -->
+            <!-- action="/main_list": main_list 페이지로 이동 -->
+            <form method="POST" action="/main_list" class="input-form" onsubmit="return addUniversityData(this)">
+                <!-- 숨겨진 입력: type=emotion 값을 자동으로 전송 -->
+                <!-- 사용자에게는 보이지 않지만 폼 제출 시 함께 전달됨 -->
+                <input type="hidden" name="type" value="emotion">
+                <input type="hidden" name="university" id="universityHidden" value="">
+
+                <!-- 텍스트 입력창 -->
+                <!-- name="value": 입력값이 ?value=xxx 형태로 전달됨 -->
+                <!-- placeholder: 입력 전 표시되는 안내 문구 -->
+                <input type="text"
+                       name="selection"
+                       placeholder="예: 우울해, 신나, 피곤해..."
+                       class="text-input"
+                       maxlength="100"
+                       required>
+                <!-- required: 필수 입력 (비어있으면 제출 안 됨) -->
+
+                <!-- 제출 버튼 -->
+                <button type="submit" class="submit-btn">
+                    추천받기 🔍
+                </button>
+            </form>
+        </div>
+        <!-- ========================================== -->
+        <!-- 섹션 3: 날씨/운세 기반 추천 -->
+        <!-- ========================================== -->
+        <div class="section">
+            <!-- 섹션 제목 -->
+            <h2 class="section-title">🌤️ 다른 방식으로 추천받기</h2>
+
+            <!-- 버튼 그룹 -->
+            <div class="button-group">
+                <!-- 날씨 기반 추천 버튼 -->
+                <!-- ?type=weather만 전달 (value는 없음) -->
+                <button class="special-btn weather-btn" onclick="selectWeather()">
+                    ☀️ 날씨로 추천받기
+                </button>
+
+                <!-- 운세 기반 추천 버튼 -->
+                <!-- ?type=fortune만 전달 (value는 없음) -->
+                <button class="special-btn fortune-btn" onclick="selectFortune()">
+                    🔮 운세로 추천받기
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript 파일 연결 (static 폴더의 script.js) -->
+    <!-- 현재는 사용하지 않지만, 나중에 기능 추가 시 사용 가능 -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // URL에서 error 파라미터 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        
+        if (error === 'emotion_analysis_failed') {
+            alert('😢 감정을 읽을 수 없습니다.\n\n좀 더 자세하고 구체적으로 입력해주세요!\n\n예시:\n- "짜증나" 대신 → "친구가 약속을 어겨서 짜증나"\n- "ㅠㅠ" 대신 → "힘들어서 울고 싶어"\n- "아" 대신 → "피곤하고 스트레스 받아"');
+            
+            // URL에서 error 파라미터 제거 (뒤로가기 시 재알림 방지)
+            window.history.replaceState({}, document.title, '/');
+        }
+    </script>
+</body>
+</html>

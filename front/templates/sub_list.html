@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ category }} 전체 리스트</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <!-- ========================================== -->
+            <!-- 헤더 -->
+            <!-- ========================================== -->
+            <div class="header">
+                <!-- 뒤로 가기 버튼 (브라우저의 뒤로 가기 기능 사용) -->
+                <button class="back-btn" onclick="history.back()">
+                    ← 뒤로 가기
+                </button>
+                <h1 class="page-title">🍽️ {{ category }} 전체 리스트</h1>
+            </div>
+            <div class="sub-list-container">
+                {% if restaurants.length == 0 %}
+                    <div class="empty-message">
+                        <p>😅 죄송합니다. 해당 카테고리에 등록된 가게가 없습니다.</p>
+                    </div>
+                {% endif %}
+                <!-- 페이지 제목: 카테고리 이름 표시 -->
+                <!-- 리스트 컨테이너 -->
+                    <!-- restaurant_list의 각 가게를 반복 -->
+                    <!-- restaurant = 개별 가게 정보 -->
+                {% for restaurant in restaurants %}
+                    <!-- 가게 아이템 (한 줄로 표시) -->
+                    <!-- 클릭하면 detail 페이지로 이동 -->
+                    <div class="sub-list-item" 
+                        onclick="location.href='/detail?category={{ category }}&name={{ restaurant.name | urlencode }}&location={{location}}'">
+                        
+                        <!-- 사진 영역 (왼쪽) -->
+                        <div class="sub-list-image">
+                            <img src="{{ restaurant.img }}" alt="{{ restaurant.name }}">
+                        </div>
+                        
+                        <!-- 정보 영역 (중앙) -->
+                        <div class="sub-list-info">
+                            <!-- 가게 이름 (클릭 가능하도록 강조) -->
+                            <h3 class="sub-list-name">{{ restaurant.name }}</h3>
+                            
+                            <!-- 평균 가격 -->
+                            {% if restaurant.menu.get('avg_price') == '변동'%}
+                                <p class="sub-list-price">💰 평균 가격: 변동</p>
+                            {% else %}
+                                <p class="sub-list-price">💰 평균 가격: {{restaurant.menu.get('avg_price')}}원</p>
+                            {% endif %}
+                            
+                            <!-- 한 줄 요약 -->
+                            <p class="sub-list-summary">{{ restaurant.summary }}</p>
+                        </div>
+                        
+                        <!-- 화살표 아이콘 (오른쪽) -->
+                        <div class="sub-list-arrow">
+                            →
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+    </body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 기반 추천 - 지역 선택</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* 날씨 선택 페이지 전용 스타일 */
+        .weather-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .weather-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .weather-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+        }
+
+        .university-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .university-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 25px 20px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .university-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .university-btn:hover:before {
+            left: 100%;
+        }
+
+        .university-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .university-btn:active {
+            transform: translateY(-2px);
+        }
+
+        .university-name {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+
+        .university-region {
+            display: block;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            display: inline-block;
+            background: #95a5a6;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .university-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weather-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <div class="weather-icon">🌤️</div>
+        <h1 class="weather-title">날씨 기반 음식 추천</h1>
+        <p class="weather-subtitle">지역을 선택하면 해당 지역의 날씨를 확인하고<br>날씨에 어울리는 음식을 추천해드립니다</p>
+
+        <div class="university-grid">
+            {% for university, data in universities.items() %}
+            <button class="university-btn" onclick="selectUniversity('{{ university }}')">
+                <span class="university-name">{{ university }}</span>
+                <span class="university-region">{{ data.short_name }}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-btn">← 메인으로 돌아가기</a>
+        </div>
+    </div>
+
+    <script>
+        function selectUniversity(university) {
+            // 선택한 대학으로 날씨 조회 페이지로 이동
+            window.location.href = `/weather_result?location=${encodeURIComponent(university)}`;
+        }
+    </script>
+</body>
+</html>

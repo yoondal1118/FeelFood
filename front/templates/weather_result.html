@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 기반 음식 추천 결과</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .weather-result-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .weather-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .weather-card h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .weather-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .weather-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .weather-item-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .weather-item-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .recommendation-card {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .recommendation-card h3 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .recommendation-text {
+            line-height: 1.8;
+            color: #34495e;
+            font-size: 1.1rem;
+            white-space: pre-line;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 맛집 보기 버튼 */
+        .view-restaurants-btn {
+            display: block;
+            width: fit-content;
+            margin: 40px auto;
+            padding: 20px 50px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(245, 87, 108, 0.4);
+            text-decoration: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .view-restaurants-btn:hover {
+            transform: translateY(-3px) scale(1.08);
+            box-shadow: 0 12px 35px rgba(245, 87, 108, 0.6);
+            animation: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .weather-info {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-result-container">
+        {% if error %}
+        <!-- 오류 메시지 -->
+        <div class="error-message">
+            <h3>⚠️ 오류가 발생했습니다</h3>
+            <p>{{ error }}</p>
+        </div>
+        {% else %}
+        <!-- 날씨 정보 카드 -->
+        <div class="weather-card">
+            <h2>🌤️ {{ weather.university }} 현재 날씨</h2>
+            <div class="weather-info">
+                <div class="weather-item">
+                    <div class="weather-item-label">날씨</div>
+                    <div class="weather-item-value">{{ weather.description }}</div>
+                </div>
+                <div class="weather-item">
+                    <div class="weather-item-label">기온</div>
+                    <div class="weather-item-value">{{ weather.temperature }}°C</div>
+                </div>
+                <div class="weather-item">
+                    <div class="weather-item-label">체감온도</div>
+                    <div class="weather-item-value">{{ weather.feels_like }}°C</div>
+                </div>
+                <div class="weather-item">
+                    <div class="weather-item-label">습도</div>
+                    <div class="weather-item-value">{{ weather.humidity }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule-Based 추천 메시지 -->
+        <div class="recommendation-card">
+            <h3>🍽️ 오늘 날씨에 어울리는 음식</h3>
+            <div class="recommendation-text">{{ recommendation_text }}</div>
+        </div>
+
+        <!-- 맛집 보기 버튼 (main_list로 이동) -->
+        <!-- categories를 쉼표로 연결해서 전달 -->
+        <a href="/main_list?type=weather&location={{ location }}&categories={{ categories_encoded }}" class="view-restaurants-btn" name="weather">
+            🍴 추천 맛집 보러가기
+        </a>
+
+        {% endif %}
+
+        <!-- 버튼 -->
+        <div class="action-buttons">
+            <a href="/weather_select" class="btn btn-secondary">← 다른 지역 선택</a>
+        </div>
+    </div>
+</body>
+</html>

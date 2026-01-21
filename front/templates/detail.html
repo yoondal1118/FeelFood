@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ restaurant.name }} - 상세 정보</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <!-- 백엔드에서 전달받은 키 사용 -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }}&libraries=services"></script>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- ========================================== -->
+        <!-- 헤더 -->
+        <!-- ========================================== -->
+        <div class="header">
+            <!-- onclick="history.back()" 사용시, 바로 이전 페이지로 뒤로가기 -->
+            <button class="back-btn" onclick="history.back()">
+                ← 뒤로 가기
+            </button>
+            <h1 class="page-title">🏪 가게 상세 정보</h1>
+        </div>
+        
+        <!-- 가게 기본 정보 -->
+        <div class="detail-section">
+            
+            <!-- 가게 이름 (크게 표시) -->
+            <h2 class="detail-name">{{ restaurant.name }}</h2>
+            
+            <!-- 가게 주소 -->
+            <p class="detail-address">
+                📍 주소: {{ restaurant.address }}
+            </p>
+            
+            <!-- 평균 가격 -->
+            <p class="detail-price">
+                💰 평균 가격: {{ restaurant.get("menu").get("avg_price") }}
+            </p>
+            
+            <!-- 한 줄 요약 -->
+            <p class="detail-summary">
+                {{ restaurant.summary }}
+            </p>
+            
+            <!-- ✅ 주소를 파라미터로 전달 -->
+            <button class="map-btn" onclick="openMapPopup('{{ restaurant.address }}', '{{ restaurant.name }}')">
+                🗺️ 지도로 확인하기
+            </button>
+
+            <!-- 팝업 모달 -->
+            <div id="mapPopup" class="popup-overlay" onclick="closeMapPopup()">
+                <div class="popup-content" onclick="event.stopPropagation()">
+                    <button class="popup-close" onclick="closeMapPopup()">×</button>
+                    <h2>🗺️ 오시는 길</h2>
+                    <p class="map-address">주소: <span id="popupAddress"></span></p>
+                    
+                    <!-- 지도가 표시될 영역 -->
+                    <div id="kakaoMap" style="width:100%; height:400px; margin-top:15px; border-radius:8px;"></div>
+                </div>
+            </div>
+
+            <!-- 메뉴 팝업 -->
+            <button class="map-btn" onclick="openMenuPopup()">
+                🍽 메뉴 확인하기
+            </button>
+
+            <!-- 팝업 모달 -->
+            <div id="menuPopup" class="popup-overlay" onclick="closeMenuPopup()">
+                <div class="popup-content" onclick="event.stopPropagation()">
+                    <button class="popup-close" onclick="closeMenuPopup()">×</button>
+                    <h2>🍽 메뉴 확인하기</h2>
+                    <div class="menu-list">
+                    {% set menu_data = restaurant.get("menu") %}
+                    {% for i in range(menu_data.menu_name|length) %}
+                        <div class="menu-item">
+                            <span class="menu-name">{{ menu_data.menu_name[i] }}</span>
+                            <span class="menu-price">{{ "{:,}".format(menu_data.menu_price[i]|int) }}원</span>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 대표 감성지수 표시 -->
+        <div class="detail-section">
+            <h3 class="section-subtitle">💖 대표 감성지수</h3>
+            <!-- 각 감정별 점수를 반복하며 표시 -->
+            {% for emotion, score in restaurant.get("emotion_score").items() %}
+                <!-- 5가지 감성 중, 제일 높은 값을 "대표 감성"으로 표시 -->
+                {% if score == max_score %}
+                    <div class="main-emotion">
+                        <span class="emotion-label">{{ emotion }}</span>
+                        <div class="emotion-bar-container">
+                            <!-- 감성지수 막대그래프 (CSS width로 시각화) -->
+                            <div class="emotion-bar main" style="width: {{ (score * 100)|round(2)  }}%">
+                                {{ (score * 100)|round(2) }}%
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <!-- ⭐ 최근 12개월간 감성지수 변화 (비동기 로딩) -->
+        <div class="detail-section">
+            <h3 class="section-subtitle">📅 최근 12개월간 감성지수 변화</h3>
+            <p class="time-description">
+                지난 12개월간 고객들이 느낀 감성의 변화를 확인해보세요! 
+                막대 높이는 리뷰 개수를 반영하며, 막대에 마우스를 올리면 정확한 월과 수치를 볼 수 있습니다.
+            </p>
+            
+            <!-- 로딩 중 표시 -->
+            <div id="chart-loading" style="text-align: center; padding: 40px;">
+                <p style="font-size: 18px; color: #666;">📊 데이터를 불러오는 중...</p>
+                <div class="spinner" style="margin: 20px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+            
+            <!-- 차트 컨테이너 (처음엔 숨김) -->
+            <div id="chart-container" style="display: none;">
+                <div class="time-chart-container" id="monthly-chart"></div>
+                
+                <!-- 범례 -->
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <span class="legend-color joy-color"></span>
+                        <span>희(기쁨)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color anger-color"></span>
+                        <span>노(화남)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color sad-color"></span>
+                        <span>슬(슬픔)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color love-color"></span>
+                        <span>사(사랑)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color fun-color"></span>
+                        <span>락(즐거움)</span>
+                    </div>
+                </div>
+                
+            <!-- 추가 설명 -->
+                <div class="chart-note">
+                    <p>💡 <strong>팁:</strong> 막대가 높을수록 리뷰가 많은 월입니다! 리뷰 개수가 많으면서 희(기쁨) 비율이 높은 월을 찾아보세요. 그 달이 이 가게가 가장 빛나는 순간입니다! ✨</p>
+                </div>
+            </div>
+            
+            <!-- 에러 메시지 영역 -->
+            <div id="chart-error" style="display: none; text-align: center; padding: 40px; color: #888;">
+                <p style="font-size: 18px;">😢 데이터를 불러올 수 없습니다.</p>
+            </div>
+            
+            <!-- 데이터 없음 메시지 -->
+            <div id="chart-no-data" style="display: none; text-align: center; padding: 40px; color: #888;">
+                <p style="font-size: 18px;">😢 최근 12개월간 리뷰 데이터가 없습니다.</p>
+                <p style="font-size: 14px; margin-top: 10px;">이 가게의 리뷰를 남겨주세요!</p>
+            </div>
+        </div>
+        
+        <!-- "더 느끼기" 버튼 및 숨겨진 영역 -->
+        <div class="detail-section">
+            
+            <!-- "더 느끼기" 버튼 -->
+            <button class="feel-more-btn" onclick="toggleEmotions()">
+                🎭 더 느끼기
+            </button>
+            
+            <!-- 나머지 감성지수 영역 (초기에는 숨김) -->
+            <div id="other-emotions" class="other-emotions" style="display: none;">
+                <h4 class="emotion-subtitle">나머지 감성지수</h4>
+                
+                <!-- 모든 감성지수를 반복 -->
+                {% for emotion, score in restaurant.emotion_score.items() %}
+                
+                    <!-- 80점 미만인 감정들만 표시 (나머지 감성) -->
+                    {% if score < 80 %}
+                    <div class="emotion-item">
+                        <span class="emotion-label">{{ emotion }}</span>
+                        <div class="emotion-bar-container">
+                            <!-- 감성지수 막대그래프 -->
+                            <div class="emotion-bar" style="width: {{ (score * 100)|round(2) }}%">
+                                {{ (score * 100)|round(2) }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+    <!-- ⭐ 비동기 차트 로딩 스크립트 -->
+    <script>
+        // 페이지 로드 시 비동기로 차트 데이터 가져오기
+        document.addEventListener('DOMContentLoaded', function() {
+            const s_idx = {{ restaurant.s_idx }};
+            loadMonthlyChart(s_idx);
+        });
+        
+        function loadMonthlyChart(s_idx) {
+            fetch(`/api/monthly_emotion/${s_idx}`)
+                .then(response => response.json())
+                .then(result => {
+                    // 로딩 숨기기
+                    document.getElementById('chart-loading').style.display = 'none';
+                    
+                    if (!result.success) {
+                        // 에러 메시지 표시
+                        document.getElementById('chart-error').style.display = 'block';
+                        return;
+                    }
+                    
+                    const data = result.data;
+                    
+                    // 데이터가 없으면
+                    if (!data.months || data.months.length === 0) {
+                        document.getElementById('chart-no-data').style.display = 'block';
+                        return;
+                    }
+                    
+                    // 차트 렌더링
+                    renderChart(data);
+                    document.getElementById('chart-container').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('차트 로딩 오류:', error);
+                    document.getElementById('chart-loading').style.display = 'none';
+                    document.getElementById('chart-error').style.display = 'block';
+                });
+        }
+        
+        function renderChart(data) {
+            const chartContainer = document.getElementById('monthly-chart');
+            const months = data.months;
+            const reviewCounts = data.review_counts;
+            const emotions = data.emotions;
+            
+            // 최대 리뷰 개수 계산
+            const maxReviewCount = Math.max(...reviewCounts);
+            
+            // 각 월별로 차트 생성
+            months.forEach((month, i) => {
+                const reviewCount = reviewCounts[i];
+                
+                // 높이 비율 계산
+                let heightRatio = (reviewCount / maxReviewCount * 100).toFixed(1);
+                if (reviewCount > 0 && heightRatio < 20) {
+                    heightRatio = 20;
+                }
+                
+                // 월 표시 (2024-01 -> 1월)
+                const monthText = month.split('-')[1] + '월';
+                
+                // 감정 값
+                const joyVal = emotions['희'][i] || 0;
+                const angerVal = emotions['노'][i] || 0;
+                const sadVal = emotions['애(슬픔)'][i] || 0;
+                const loveVal = emotions['애(사랑)'][i] || 0;
+                const funVal = emotions['락'][i] || 0;
+                
+                // HTML 생성
+                const columnHtml = `
+                    <div class="time-column">
+                        <div class="time-bars" style="height: ${heightRatio}%">
+                            <div class="time-bar joy-bar" style="flex: ${joyVal}"
+                                title="${month} - 리뷰 ${reviewCount}개 | 희: ${joyVal}%"></div>
+                            <div class="time-bar anger-bar" style="flex: ${angerVal}"
+                                title="${month} - 리뷰 ${reviewCount}개 | 노: ${angerVal}%"></div>
+                            <div class="time-bar sad-bar" style="flex: ${sadVal}"
+                                title="${month} - 리뷰 ${reviewCount}개 | 슬: ${sadVal}%"></div>
+                            <div class="time-bar love-bar" style="flex: ${loveVal}"
+                                title="${month} - 리뷰 ${reviewCount}개 | 사: ${loveVal}%"></div>
+                            <div class="time-bar fun-bar" style="flex: ${funVal}"
+                                title="${month} - 리뷰 ${reviewCount}개 | 락: ${funVal}%"></div>
+                        </div>
+                        <div class="time-label">${monthText}</div>
+                        <div class="review-count-label">${reviewCount}개</div>
+                    </div>
+                `;
+                
+                chartContainer.innerHTML += columnHtml;
+            });
+        }
+    </script>
+    
+    <!-- 스피너 애니메이션 -->
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

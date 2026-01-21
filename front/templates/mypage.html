@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .mypage-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .mypage-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .mypage-title {
+            font-size: 32px;
+            color: #e67e22;
+            margin-bottom: 10px;
+        }
+
+        .mypage-subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .profile-section {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f5f5f5;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f6b26b, #f4a261);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .profile-details {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .profile-email {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .profile-birth {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .menu-section {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 30px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background: #fff4ec;
+        }
+
+        .menu-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .menu-text {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .menu-arrow {
+            font-size: 20px;
+            color: #999;
+        }
+
+        .logout-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            background: #95a5a6;
+            color: white;
+            padding: 12px 40px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        /* 비밀번호 변경 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e67e22;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .modal-form label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        .modal-form input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 6px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .modal-form input:focus {
+            outline: none;
+            border-color: #f4a261;
+            box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);
+        }
+
+        .modal-msg {
+            font-size: 12px;
+            margin-bottom: 14px;
+            min-height: 18px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-submit {
+            background: linear-gradient(135deg, #f6b26b, #f4a261);
+            color: white;
+        }
+
+        .modal-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .profile-info {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .menu-item {
+                padding: 16px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mypage-container">
+        <div class="mypage-header">
+            <h1 class="mypage-title">마이페이지</h1>
+            <p class="mypage-subtitle">내 정보를 관리하세요</p>
+        </div>
+
+        <!-- 프로필 섹션 -->
+        <div class="profile-section">
+            <div class="profile-info">
+                <div class="profile-avatar" id="profileAvatar">
+                    <!-- 이름 첫 글자 표시 -->
+                </div>
+                <div class="profile-details">
+                    <div class="profile-name" id="profileName">{{ user_name }}</div>
+                    <div class="profile-email" id="profileEmail">user@example.com</div>
+                    <div class="profile-birth" id="profileBirth">생년월일: </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메뉴 섹션 -->
+        <div class="menu-section">
+            <div class="menu-item" onclick="openPasswordModal()">
+                <div class="menu-left">
+                    <div class="menu-icon">🔒</div>
+                    <div class="menu-text">비밀번호 변경</div>
+                </div>
+                <div class="menu-arrow">›</div>
+            </div>
+
+            <!-- <div class="menu-item" onclick="goToFavorites()">
+                <div class="menu-left">
+                    <div class="menu-icon">❤️</div>
+                    <div class="menu-text">찜한 맛집</div>
+                </div>
+                <div class="menu-arrow">›</div>
+            </div> -->
+        </div>
+
+        <!-- 로그아웃 버튼 -->
+        <div class="logout-section">
+            <a href="./"><button class="logout-btn">처음으로</button></a>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">비밀번호 변경</div>
+            <form class="modal-form" id="passwordForm">
+                <label>현재 비밀번호</label>
+                <input type="password" id="currentPassword" required>
+                <div class="modal-msg" id="currentPasswordMsg"></div>
+
+                <label>새 비밀번호</label>
+                <input type="password" id="newPassword" required>
+                <div class="modal-msg" id="newPasswordMsg">
+                    영문/숫자/특수문자(!~@#) 중 2가지 이상, 6자 이상
+                </div>
+
+                <label>새 비밀번호 확인</label>
+                <input type="password" id="confirmPassword" required>
+                <div class="modal-msg" id="confirmPasswordMsg"></div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="closePasswordModal()">취소</button>
+                    <button type="submit" class="modal-btn modal-btn-submit">변경하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 사용자 정보 불러오기
+        window.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/user/profile');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('profileName').textContent = data.name;
+                    document.getElementById('profileEmail').textContent = data.email;
+                    document.getElementById('profileBirth').textContent = `생년월일: ${data.birth}`;
+                    document.getElementById('profileAvatar').textContent = data.name.charAt(0);
+                }
+            } catch (error) {
+                console.error('프로필 로드 실패:', error);
+            }
+        });
+
+        // 비밀번호 변경 모달 열기/닫기
+        function openPasswordModal() {
+            document.getElementById('passwordModal').classList.add('active');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('active');
+            document.getElementById('passwordForm').reset();
+            clearPasswordMessages();
+        }
+
+        function clearPasswordMessages() {
+            document.getElementById('currentPasswordMsg').textContent = '';
+            document.getElementById('newPasswordMsg').textContent = '영문/숫자/특수문자(!~@#) 중 2가지 이상, 6자 이상';
+            document.getElementById('confirmPasswordMsg').textContent = '';
+        }
+
+        // 새 비밀번호 유효성 검사
+        document.getElementById('newPassword').addEventListener('input', function() {
+            const v = this.value;
+            const msg = document.getElementById('newPasswordMsg');
+
+            const count = /[A-Za-z]/.test(v) + /[0-9]/.test(v) + /[!~@#]/.test(v);
+
+            if (v.length < 6 || count < 2 || /[^A-Za-z0-9!~@#]/.test(v)) {
+                msg.style.color = 'red';
+                msg.textContent = '조건을 만족하지 않습니다.';
+                return;
+            }
+
+            msg.style.color = 'green';
+            msg.textContent = '안전한 비밀번호입니다.';
+        });
+
+        // 비밀번호 확인 검사
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const newPw = document.getElementById('newPassword').value;
+            const confirmPw = this.value;
+            const msg = document.getElementById('confirmPasswordMsg');
+
+            if (confirmPw && newPw !== confirmPw) {
+                msg.style.color = 'red';
+                msg.textContent = '비밀번호가 일치하지 않습니다.';
+            } else if (confirmPw && newPw === confirmPw) {
+                msg.style.color = 'green';
+                msg.textContent = '비밀번호가 일치합니다.';
+            } else {
+                msg.textContent = '';
+            }
+        });
+
+        // 비밀번호 변경 제출
+        document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 유효성 검사
+            const count = /[A-Za-z]/.test(newPassword) + /[0-9]/.test(newPassword) + /[!~@#]/.test(newPassword);
+            if (newPassword.length < 6 || count < 2 || /[^A-Za-z0-9!~@#]/.test(newPassword)) {
+                alert('새 비밀번호가 조건을 만족하지 않습니다.');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('새 비밀번호가 일치하지 않습니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/change_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('비밀번호가 성공적으로 변경되었습니다.');
+                    closePasswordModal();
+                } else {
+                    const msg = document.getElementById('currentPasswordMsg');
+                    msg.style.color = 'red';
+                    msg.textContent = data.message || '현재 비밀번호가 올바르지 않습니다.';
+                }
+            } catch (error) {
+                alert('비밀번호 변경 중 오류가 발생했습니다.');
+                console.error(error);
+            }
+        });
+
+        // 찜한 맛집으로 이동
+        function goToFavorites() {
+            window.location.href = '/favorites';
+        }
+
+        // 로그아웃
+        async function logout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                try {
+                    const response = await fetch('/logout', { method: 'POST' });
+                    if (response.ok) {
+                        window.location.href = '/';
+                    }
+                } catch (error) {
+                    console.error('로그아웃 실패:', error);
+                }
+            }
+        }
+
+        // 모달 외부 클릭 시 닫기
+        document.getElementById('passwordModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePasswordModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>추천 음식 리스트</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        
+        <!-- ========================================== -->
+        <!-- 헤더: 선택한 조건 표시 -->
+        <!-- ========================================== -->
+        <div class="header">
+            <!-- 홈으로 돌아가기 버튼 -->
+            <button class="back-btn" onclick="location.href='/'">
+                ← 처음으로
+            </button>
+            
+            <!-- 선택한 조건을 동적으로 표시 -->
+            <h1 class="page-title">
+                <!-- Jinja2 템플릿 문법: if 조건문 -->
+                <!-- app.py에서 전달받은 selected_type, selected_value 사용 -->
+                
+                {% if selected_type == 'emotion' %}
+                    {% if selected_value == '희' %}
+                        기쁠 땐😊! 여기 어때?!
+                    {% elif selected_value == '노' %}
+                        화날 땐😠! 여기 어때?!
+                    {% elif selected_value == '애(슬픔)' %}
+                        슬플 땐ㅠ😢 여기 어때?!
+                    {% elif selected_value == '애(사랑)' %}
+                        사랑스러운 날❤️ 여기 어때?!
+                    {% elif selected_value == '락' %}
+                        즐거울 땐🎉! 여기 어때?!
+                    {% else %}
+                        🤔
+                    {% endif %}
+                {% elif selected_type == 'weather' %}
+                    <!-- 날씨를 선택한 경우 -->
+                    ☀️ 오늘 날씨에 맞는 추천 음식
+                {% elif selected_type == 'fortune' %}
+                    <!-- 운세를 선택한 경우 -->
+                    🔮 오늘의 운세에 맞는 추천 음식
+                {% else %}
+                    <!-- 그 외의 경우 (기본값) -->
+                    🍽️ 추천 음식
+                {% endif %}
+            </h1>
+
+            <!-- 🎓 대학교 변경 (오른쪽에 배치) -->
+            <div class="university-header-right">
+                <label for="universityChangeSelect" class="university-label-inline">🎓 대학교:</label>
+                <select id="universityChangeSelect" class="university-select-inline" onchange="changeUniversity()">
+                    <option value="">선택</option>
+                    <option value="서울대">서울대</option>
+                    <option value="부산대">부산대</option>
+                    <option value="경북대">경북대</option>
+                    <option value="전북대">전북대</option>
+                    <option value="전남대">전남대</option>
+                    <option value="경상대">경상대</option>
+                    <option value="충북대">충북대</option>
+                    <option value="충남대">충남대</option>
+                    <option value="강원대">강원대</option>
+                    <option value="제주대">제주대</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- 추천 음식 카테고리별 표시 -->
+        <!-- ========================================== -->
+
+        <!-- 🌤️ 날씨 기반: 순서대로 표시 (새로 추가) -->
+    {% if ordered_categories %}
+        {% for category in ordered_categories %}
+            {% if category in recommendations %}
+                <div class="category-section">
+                    <!-- 카테고리 헤더 (한식, 중식 일식 양식...) -->
+                <div class="category-header">
+                    <!-- 카테고리 이름 -->
+                    <h2 class="category-title">{{ category }}</h2>
+                    
+                    <!-- "더 맛보기" 버튼: 해당 카테고리의 sub_list 페이지로 이동 -->
+                    <!-- ?category=한식 형태로 카테고리 이름을 전달 -->
+                    <button class="more-btn" 
+                            onclick="location.href='/sub_list?category={{ category }}&location={{location}}'">
+                        더 맛보기 →
+                    </button>
+                </div>
+                
+                <div class="restaurant-grid">
+                    {% for restaurant in recommendations[category] %}
+                    <div class="restaurant-card">
+                        <div class="restaurant-image">
+                            <img src="{{restaurant.img}}" height="50px" alt="이미지 설명">
+                        </div>
+                        
+                        <div class="restaurant-info">
+                            <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                            <p class="restaurant-price">💰 
+                                {% if restaurant.menu.get('avg_price') != "변동" %}
+                                    평균 메뉴 가격 {{restaurant.menu.get('avg_price')}}원
+                                {% else %}
+                                    변동
+                                {% endif %}
+                            </p>
+                            
+                            <button class="detail-btn" 
+                                    onclick="location.href='/detail?category={{ category }}&name={{ restaurant.name | urlencode }}'">
+                                자세히 보기 🔍
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+    <!-- 감정 기반 또는 기타: 기존 코드 그대로 -->
+    {% else %}
+        <!-- Jinja2 반복문: recommendations 딕셔너리를 반복 -->
+        <!-- category = 카테고리 이름 (한식, 중식 등) -->
+        <!-- restaurant_list = 해당 카테고리의 가게 리스트 -->
+        {% for category, restaurant_list in recommendations.items() %}
+        
+        <!-- 카테고리 섹션 -->
+        <div class="category-section">
+            
+            <!-- 카테고리 헤더 (한식, 중식 일식 양식...) -->
+            <div class="category-header">
+                <!-- 카테고리 이름 -->
+                <h2 class="category-title">{{ category }}</h2>
+                
+                <!-- "더 맛보기" 버튼: 해당 카테고리의 sub_list 페이지로 이동 -->
+                <!-- ?category=한식 형태로 카테고리 이름을 전달 -->
+                <button class="more-btn" 
+                        onclick="location.href='/sub_list?emotion={{selected_value}}&category={{ category }}&location={{location}}'">
+                    더 맛보기 →
+                </button>
+            </div>
+            
+            <!-- 가게 카드들을 담는 컨테이너 -->
+            <div class="restaurant-grid">
+                
+                <!-- 해당 카테고리의 각 가게를 반복 -->
+                <!-- restaurant = 개별 가게 정보 (딕셔너리) -->
+                {% for restaurant in restaurant_list %}
+                
+                <!-- 가게 카드 -->
+                <div class="restaurant-card">
+                    
+                    <!-- 가게 사진 영역 (실제 이미지 대신 플레이스홀더) -->
+                    <div class="restaurant-image">
+                        <img src="{{restaurant.img}}" height="50px" alt="이미지 설명">
+                    </div>
+                    
+                    <!-- 가게 정보 -->
+                    <div class="restaurant-info">
+                        <!-- 가게 이름 -->
+                        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+                        <!-- <h3 class="restaurant-price">{{ restaurant.address }}</h3> -->
+                        
+                        <!-- 평균 가격 -->
+                        <p class="restaurant-price">💰 
+                            {% if restaurant.menu.get('avg_price') != "변동" %}
+                                평균 메뉴 가격 {{restaurant.menu.get('avg_price')}}원
+                            {% else %}
+                                변동
+                            {% endif %}
+                        </p>
+                        
+                        <!-- 한 줄 요약 -->
+                        <!-- <p class="restaurant-summary">{{ restaurant.summary }}</p> -->
+                        
+                        <!-- "자세히 보기" 버튼: detail 페이지로 이동 -->
+                        <!-- ?category=한식&name=김밥천국 형태로 데이터 전달 -->
+                        <button class="detail-btn" 
+                                onclick="location.href='/detail?category={{ category }}&name={{ restaurant.name | urlencode }}&location={{location}}'">
+                            자세히 보기 🔍
+                        </button>
+                    </div>
+                    
+                </div>
+                
+                {% endfor %}
+                <!-- 가게 반복 끝 -->
+                
+            </div>
+            <!-- restaurant-grid 끝 -->
+            
+        </div>
+        <!-- category-section 끝 -->
+        
+        {% endfor %}
+        <!-- 카테고리 반복 끝 -->
+    {% endif %}
+        
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

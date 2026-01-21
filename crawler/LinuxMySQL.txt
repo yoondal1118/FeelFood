@@ -1,0 +1,395 @@
+#####(리눅스 기본 세팅)
+    sudo apt-get update
+    sudo apt-get upgrade
+
+    sudo apt search openjdk-17-jdk
+    sudo apt install openjdk-17-jdk
+
+#####(SSH 설정)
+    sudo systemctl status ssh
+    sudo systemctl start ssh
+    sudo systemctl enable ssh
+    sudo ufw allow ssh
+
+#####(miniconda 설치)
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash ~/Miniconda3-latest-Linux-x86_64.sh
+    source ~/.bashrc
+
+#####(업데이트 및 mysql 설치)
+	sudo apt update
+	sudo apt install mysql-server -y
+
+	sudo systemctl status mysql
+
+(mysql 초기 보안 설정)
+	sudo mysql_secure_installation
+   	    - N, Y, N, Y, Y
+
+(루트 계정 비밀번호 설정)
+	sudo mysql
+	ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'jbnuezen1!';
+	FLUSH PRIVILEGES;
+	EXIT
+
+(로그인 확인)
+	mysql -u root -p
+	jbnuezen1!
+
+#####(bigdata 라는 DB 생성)
+CREATE DATABASE bigdata
+  CHARACTER SET utf8mb4;
+
+(DB 바꾸기)
+use bigdata;
+
+CREATE TABLE store (
+  s_idx INT NOT NULL AUTO_INCREMENT,
+  s_name VARCHAR(255),
+  s_categ VARCHAR(255),
+  s_location VARCHAR(255),
+  s_address VARCHAR(255),
+  s_img TEXT,
+  s_y_coord DECIMAL(12, 9) COMMENT '위도(latitude)',
+  s_x_coord DECIMAL(12, 9) COMMENT '경도(longitude)',
+  PRIMARY KEY (s_idx)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE review (
+  r_idx         INT NOT NULL AUTO_INCREMENT,
+  s_idx         INT NOT NULL,
+  r_content     TEXT,
+  r_visit_count INT,
+  r_date        DATE,
+  r_location VARCHAR(255),
+  r_writer VARCHAR(255),
+  PRIMARY KEY (r_idx),
+  FOREIGN KEY (s_idx) REFERENCES store(s_idx)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE menu (
+  m_idx INT NOT NULL AUTO_INCREMENT,
+  s_idx INT NOT NULL,
+  m_name VARCHAR(255),
+  m_price VARCHAR(255),
+  m_location VARCHAR(255),
+  PRIMARY KEY (m_idx),
+  FOREIGN KEY (s_idx) REFERENCES store(s_idx)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE user (
+  u_idx INT NOT NULL AUTO_INCREMENT,
+  u_name VARCHAR(255) NOT NULL,
+  u_id VARCHAR(255) NOT NULL,
+  u_pw VARCHAR(255) NOT NULL,
+  u_email VARCHAR(255) NOT NULL,
+  u_dob DATE NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  PRIMARY KEY (u_idx),
+  UNIQUE KEY uk_user_u_id (u_id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE etype (
+  t_idx INT NOT NULL AUTO_INCREMENT,
+  t_emo_type VARCHAR(255) NOT NULL,
+  PRIMARY KEY (t_idx)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE emotion (
+  e_idx INT NOT NULL AUTO_INCREMENT,
+  e_score FLOAT NOT NULL,
+  t_idx INT NOT NULL,
+  r_idx INT NOT NULL,
+  PRIMARY KEY (e_idx),
+  FOREIGN KEY (t_idx) REFERENCES etype(t_idx),
+  FOREIGN KEY (r_idx) REFERENCES review(r_idx)
+) ENGINE=InnoDB;
+
+### view테이블 사용하니까 너무 느려서 일반 테이블로 변경함
+1. 테이블 생성
+---------------------------------------------
+CREATE TABLE store_emotion_count_table (
+    s_idx INT PRIMARY KEY,
+    s_location VARCHAR(255),
+    happy_cnt INT DEFAULT 0,
+    angry_cnt INT DEFAULT 0,
+    sad_cnt INT DEFAULT 0,
+    love_cnt INT DEFAULT 0,
+    fun_cnt INT DEFAULT 0,
+    complain_cnt INT DEFAULT 0,
+    total_cnt INT GENERATED ALWAYS AS (
+        happy_cnt + angry_cnt + sad_cnt + love_cnt + fun_cnt
+    ) STORED,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_location (s_location),
+    INDEX idx_total_cnt (total_cnt)
+) ENGINE=InnoDB;
+
+2. 테이블에 데이터 추가
+-----------------------------------------------
+INSERT INTO store_emotion_count_table (
+    s_idx, 
+    s_location, 
+    happy_cnt, 
+    angry_cnt, 
+    sad_cnt, 
+    love_cnt, 
+    fun_cnt, 
+    complain_cnt
+)
+SELECT 
+    s.s_idx,
+    s.s_location,
+    SUM(CASE WHEN re.t_idx = 1 THEN 1 ELSE 0 END) as happy_cnt,
+    SUM(CASE WHEN re.t_idx = 2 THEN 1 ELSE 0 END) as angry_cnt,
+    SUM(CASE WHEN re.t_idx = 3 THEN 1 ELSE 0 END) as sad_cnt,
+    SUM(CASE WHEN re.t_idx = 4 THEN 1 ELSE 0 END) as love_cnt,
+    SUM(CASE WHEN re.t_idx = 5 THEN 1 ELSE 0 END) as fun_cnt,
+    SUM(CASE WHEN re.t_idx = 6 THEN 1 ELSE 0 END) as complain_cnt
+FROM store s 
+LEFT JOIN review r ON s.s_idx = r.s_idx 
+LEFT JOIN (
+    SELECT e.r_idx, e.t_idx
+    FROM emotion e
+    INNER JOIN (
+        SELECT r_idx, MAX(e_score) as max_score 
+        FROM emotion
+        GROUP BY r_idx 
+    ) m ON e.r_idx = m.r_idx AND e.e_score = m.max_score 
+) re ON r.r_idx = re.r_idx 
+GROUP BY s.s_idx, s.s_location;
+
+3. 인덱스 생성
+------------------------------------------
+CREATE INDEX idx_emotion_ridx_score ON emotion(r_idx, e_score);
+CREATE INDEX idx_store_location ON store(s_location);
+CREATE INDEX idx_menu_s_idx ON menu(s_idx);
+CREATE INDEX idx_review_sidx ON review(s_idx);
+CREATE INDEX idx_store_name ON store(s_name);
+CREATE INDEX idx_emotion_s_name ON emotion(s_name, e_score);
+
+
+# 각 가게의 각 감정별 리뷰 개수를 확인할 수 있는 view 테이블
+CREATE VIEW store_emotion_count AS
+SELECT
+    s.s_idx,
+    s.s_location,
+    SUM(CASE WHEN re.t_idx = 1 THEN 1 ELSE 0 END) AS happy_cnt,
+    SUM(CASE WHEN re.t_idx = 2 THEN 1 ELSE 0 END) AS angry_cnt,
+    SUM(CASE WHEN re.t_idx = 3 THEN 1 ELSE 0 END) AS sad_cnt,
+    SUM(CASE WHEN re.t_idx = 4 THEN 1 ELSE 0 END) AS love_cnt,
+    SUM(CASE WHEN re.t_idx = 5 THEN 1 ELSE 0 END) AS fun_cnt,
+    SUM(CASE WHEN re.t_idx = 6 THEN 1 ELSE 0 END) AS complain_cnt
+FROM store s
+LEFT JOIN review r
+    ON s.s_idx = r.s_idx
+LEFT JOIN (
+    -- 리뷰별 대표 감정 추출
+    SELECT
+        e.r_idx,
+        e.t_idx
+    FROM emotion e
+    JOIN (
+        SELECT
+            r_idx,
+            MAX(e_score) AS max_score
+        FROM emotion
+        GROUP BY r_idx
+    ) m
+    ON e.r_idx = m.r_idx
+    AND e.e_score = m.max_score
+) re
+    ON r.r_idx = re.r_idx
+GROUP BY
+    s.s_idx,
+    s.s_location;
+
+
+# 비슷한 가게 카테고리를 7개의 카테고리로 묶음
+CREATE OR REPLACE VIEW vw_store_major_category AS
+SELECT
+    s_idx,
+    s_name,
+    s_location,
+    s_categ,
+
+    CASE
+        WHEN s_categ IN (
+            '한식','국밥','곰탕,설렁탕','해장국','찌개,전골','백반,가정식',
+            '비빔밥','순대,순댓국','감자탕','죽','두부요리','한정식',
+            '장어,먹장어요리','낙지요리','주꾸미요리','오리요리',
+            '생선구이','해물,생선요리','아귀찜,해물찜','조개요리','샤브샤브'
+        ) THEN '한식'
+
+        WHEN s_categ IN (
+            '육류,고기요리','돼지고기구이','소고기구이','정육식당',
+            '곱창,막창,양','족발,보쌈','스테이크,립',
+            '치킨,닭강정','닭요리','닭발','닭갈비','찜닭'
+        ) THEN '고기/구이/치킨'
+
+        WHEN s_categ IN (
+            '중식당','마라탕','양꼬치','아시아음식',
+            '베트남음식','태국음식','인도음식',
+            '터키음식','멕시코,남미음식','카레'
+        ) THEN '중식/아시아'
+
+        WHEN s_categ IN (
+            '일식당','초밥,롤','생선회','이자카야',
+            '일본식라면','돈가스','우동,소바','오므라이스'
+        ) THEN '일식'
+
+        WHEN s_categ IN (
+            '양식','이탈리아음식','스파게티,파스타전문',
+            '피자','햄버거','샌드위치','브런치',
+            '토스트','패밀리레스토랑'
+        ) THEN '양식/브런치'
+
+        WHEN s_categ IN (
+            '카페','카페,디저트','베이커리','케이크전문',
+            '도넛','아이스크림','호두과자','크레페',
+            '테이크아웃커피','북카페','다이어트,샐러드'
+        ) THEN '카페/디저트'
+
+        WHEN s_categ IN (
+            '술집','요리주점','전통,민속주점',
+            '맥주,호프','바(BAR)','와인','포장마차'
+        ) THEN '술집/이자카야'
+
+        ELSE '기타'
+    END AS major_categ
+FROM store;
+
+
+
+
+####(크롤링된 데이터가 해당 s_location이 아닌 다른곳의 가게 데이터일때 삭제)
+-- 0. 삭제가 필요한 데이터 존재 확인
+SELECT s_idx, s_name, s_address FROM store WHERE s_location = '부산대' AND s_address NOT LIKE '부산%';
+
+START TRANSACTION;
+
+-- 1. emotion
+DELETE e
+FROM emotion e
+JOIN review r ON e.r_idx = r.r_idx
+JOIN store s ON r.s_idx = s.s_idx
+WHERE s.s_location = '서울대 입구역'
+  AND s.s_address NOT LIKE '서울%';
+
+-- 2. review
+DELETE r
+FROM review r
+JOIN store s ON r.s_idx = s.s_idx
+WHERE s.s_location = '서울대 입구역'
+  AND s.s_address NOT LIKE '서울%';
+
+-- 3. menu
+DELETE m
+FROM menu m
+JOIN store s ON m.s_idx = s.s_idx
+WHERE s.s_location = '서울대 입구역'
+  AND s.s_address NOT LIKE '서울%';
+
+-- 4. store
+DELETE FROM store
+WHERE s_location = '서울대 입구역'
+  AND s_address NOT LIKE '서울%';
+
+-- 5. 삭제 완료 확인
+SELECT s_idx, s_name, s_address FROM store WHERE s_location = '서울대 입구역' AND s_address NOT LIKE '서울%';
+
+-- 성공했으면
+COMMIT;
+
+-- 실패했으면
+ROLLBACK;
+
+
+
+### store 가게 중에, review가 없는 애들 찾는 명령어
+
+SELECT s.s_idx, s.s_name, s.s_img, s.s_address
+FROM store s
+LEFT JOIN review r ON s.s_idx = r.s_idx
+WHERE r.s_idx IS NULL;
+
+### 위에서 찾은 가게 수 다시 확인
+
+SELECT COUNT(*)
+FROM store s
+LEFT JOIN review r ON s.s_idx = r.s_idx
+WHERE r.s_idx IS NULL;
+
+### 위에 나온 가게의 s_img, s_address null로 초기화
+
+UPDATE store s
+LEFT JOIN review r ON s.s_idx = r.s_idx
+SET 
+    s.s_img = NULL,
+    s.s_address = NULL
+WHERE r.s_idx IS NULL;
+
+
+
+
+(서버에서 MySQL 외부 접속 허용 설정)
+	sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
+(변경)
+	bind-address = 0.0.0.0
+(MySQL 재시작)
+	sudo systemctl restart mysql
+(바인딩 확인 (출력에 "0.0.0.0:3306"이 보여야 함) )
+	sudo netstat -tulpn | grep mysql
+
+(위 명령어 안되면 이거로)
+	sudo ss -tulpn | grep mysql
+
+
+
+#####(외부에서 접속할 수 있도록 계정 생성)
+
+(root로 로그인 하고)
+	mysql -u root -p
+
+(root 계정에 외부 접속 권한 부여 - 보안성을 위해서 건너뛰어도 됨)
+	CREATE USER 'root'@'%' IDENTIFIED BY 'jbnuezen1!';
+	GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+	FLUSH PRIVILEGES;
+
+(보안을 위해 root 대신 별도 사용자 생성 및 권한 부여, 모든 IP에서 허용, 모든권한 허용)
+	CREATE USER 'crawler'@'%' IDENTIFIED BY 'jbnuezen1!';
+	GRANT ALL PRIVILEGES ON bigdata.* TO 'crawler'@'%';
+	FLUSH PRIVILEGES;
+
+
+(권한 확인)
+	SELECT user, host FROM mysql.user WHERE user='root';
+	SELECT user, host FROM mysql.user WHERE user='crawler';
+
+root | %         ← 외부에서 root로 접속 가능
+root | localhost ← 로컬에서 root로 접속 가능
+crawler | %      ← 외부에서 crawler로 접속 가능
+
+EXIT;
+
+
+#####(필요시 방화벽 설정)
+	sudo ufw status
+(active라면 3306 포트 열기 / inactive는 원래 꺼져있으니까 여기는 건너뛰면 됨)
+	sudo ufw allow 3306/tcp
+(확인)
+	sudo ufw status
+
+
+#####(포트포워딩)
+이름: MySQL
+프로토콜: TCP
+호스트 IP: 127.0.0.1
+호스트 포트: 3306
+게스트 IP: 10.0.2.4  (서버 IP)
+게스트 포트: 3306
